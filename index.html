@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Assistant Room Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background: #eef2f3; padding-top: 50px; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 85%; }
+        h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
+        .sub { color: #7f8c8d; font-size: 14px; margin-bottom: 25px; }
+        .suhu-box { background: #fdf0ed; border-radius: 15px; padding: 20px; border: 2px solid #ff7675; }
+        .suhu { font-size: 64px; font-weight: bold; color: #d63031; }
+        .status { margin-top: 20px; font-size: 14px; color: #7f8c8d; font-weight: bold; }
+        .btn-suara { margin-top: 25px; background: #0984e3; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+    </style>
+    <script>
+        let alarmSudahBunyi = false;
+
+        function asistenBerbicara(teks) {
+            let ucapan = new SpeechSynthesisUtterance(teks);
+            ucapan.lang = 'id-ID';
+            ucapan.rate = 0.95;
+            window.speechSynthesis.speak(ucapan);
+        }
+
+        function aktifkanAsisten() {
+            asistenBerbicara("Asisten pintar ruangan diaktifkan. Memulai pembacaan data sensor.");
+            document.getElementById('btnAktif').style.display = 'none';
+        }
+
+        function ambilDataSuhu() {
+            // Membaca data suhu secara langsung dari API backend Vercel tanpa proxy luar
+            fetch('/api/suhu')
+                .then(response => response.json())
+                .then(data => {
+                    let nilaiSuhu = parseFloat(data.suhu);
+                    if (!isNaN(nilaiSuhu)) {
+                        document.getElementById('displaySuhu').innerText = nilaiSuhu.toFixed(2) + " °C";
+
+                        if (nilaiSuhu >= 32.0) {
+                            document.getElementById('statusKondisi').innerText = "⚠️ PERINGATAN: RUANGAN TERLALU PANAS!";
+                            document.getElementById('statusKondisi').style.color = "#d63031";
+                            
+                            if (!alarmSudahBunyi) {
+                                asistenBerbicara("Peringatan, suhu ruangan melebihi batas normal. Saat ini suhu mencapai " + nilaiSuhu.toFixed(0) + " derajat Celcius.");
+                                alarmSudahBunyi = true;
+                            }
+                        } else {
+                            document.getElementById('statusKondisi').innerText = "✓ Suhu Ruangan Normal Sejuk.";
+                            document.getElementById('statusKondisi').style.color = "#2ecc71";
+                            alarmSudahBunyi = false;
+                        }
+                    }
+                })
+                .catch(err => console.log("Menghubungkan kembali..."));
+        }
+        setInterval(ambilDataSuhu, 3000);
+    </script>
+</head>
+<body onload="ambilDataSuhu()">
+    <div class="card">
+        <h1>Smart Assistant Room</h1>
+        <div class="sub">Sistem Pengendalian Nyata Berbasis Web IoT (Vercel)</div>
+        <div class="suhu-box">
+            <div class="suhu" id="displaySuhu">-- °C</div>
+            <div class="status" id="statusKondisi">Menghubungkan ke server...</div>
+        </div>
+        <button class="btn-suara" id="btnAktif" onclick="aktifkanAsisten()">Klik untuk Aktifkan Suara Asisten</button>
+    </div>
+</body>
+</html>
