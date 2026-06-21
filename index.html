@@ -196,10 +196,42 @@
             fetch('/api/suhu')
                 .then(response => response.json())
                 .then(data => {
-                    let nilaiSuhu = parseFloat(data.suhu);
+                    // PERBAIKAN: Mengonversi teks string seperti "29.50" dari ESP8266 menjadi angka desimal murni
+                    let nilaiSuhu = parseFloat(data.suhu); 
+                    
                     if (!isNaN(nilaiSuhu)) {
                         document.getElementById('displaySuhu').innerText = nilaiSuhu.toFixed(2) + " °C";
 
                         let borderBox = document.getElementById('statusBorder');
 
                         if (nilaiSuhu >= 32.0) {
+                            document.getElementById('statusKondisi').innerText = "⚠️ PERINGATAN: RUANGAN TERLALU PANAS!";
+                            document.getElementById('statusKondisi').style.color = "#e74a3b";
+                            
+                            // Mengubah border warna box menjadi merah secara dinamis
+                            borderBox.className = "card border-suhu-panas";
+                            
+                            if (!alarmSudahBunyi) {
+                                asistenBerbicara("Peringatan, suhu ruangan melebihi batas normal. Saat ini suhu mencapai " + nilaiSuhu.toFixed(0) + " derajat Celcius.");
+                                alarmSudahBunyi = true;
+                            }
+                        } else {
+                            document.getElementById('statusKondisi').innerText = "✓ Suhu Ruangan Normal Sejuk.";
+                            document.getElementById('statusKondisi').style.color = "#1cc88a";
+                            
+                            // Mengubah border warna box menjadi hijau secara dinamis
+                            borderBox.className = "card border-suhu-normal";
+                            alarmSudahBunyi = false;
+                        }
+                    } else {
+                        // Jika konversi gagal karena format data aneh
+                        console.log("Format data suhu tidak valid:", data.suhu);
+                    }
+                })
+                .catch(err => {
+                    console.log("Menghubungkan kembali...");
+                    document.getElementById('statusKondisi').innerText = "Mencoba menghubungkan ulang...";
+                    document.getElementById('statusKondisi').style.color = "#f6c23e";
+                });
+        }
+
