@@ -152,7 +152,10 @@
             border: 1px solid #e2e8f0;
             border-radius: 20px;
             padding: 20px;
+            margin-bottom: 20px;
         }
+        .panel:last-child { margin-bottom: 0; }
+        
         .panel-title {
             font-size: 14px;
             font-weight: 800;
@@ -212,34 +215,45 @@
             box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
         }
 
-        /* --- DESAIN PROGRESS BAR BARU (MURNI CSS) --- */
+        /* --- DESAIN PROGRESS BAR --- */
         .progress-bar-wrapper {
-            background: #f1f5f9;
-            width: 100%;
-            height: 24px;
-            border-radius: 30px;
-            overflow: hidden;
-            margin-top: 15px;
-            border: 1px solid #e2e8f0;
-            position: relative;
+            background: #f1f5f9; width: 100%; height: 20px; border-radius: 30px;
+            overflow: hidden; margin-top: 10px; border: 1px solid #e2e8f0; position: relative;
         }
         .progress-bar-fill {
-            height: 100%;
-            width: 0%; /* Diatur dinamis lewat Javascript */
-            background: #2ecc71;
+            height: 100%; width: 0%; background: #2ecc71;
             transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
         }
-        .scale-labels {
+        .scale-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; font-weight: 700; color: #94a3b8; }
+
+        /* --- DESAIN LIST LOG RIWAYAT WAKTU --- */
+        .log-container {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+        .log-item {
             display: flex;
             justify-content: space-between;
-            margin-top: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #94a3b8;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            animation: fadeIn 0.3s ease;
+        }
+        .log-item:last-child { border: none; }
+        .log-time { color: #64748b; font-family: monospace; font-size: 14px; }
+        .log-temp { color: #0f172a; background: #e2e8f0; padding: 2px 8px; border-radius: 6px; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="bg-light" onload="ambilDataSuhu()">
+<body onload="ambilDataSuhu()">
 
     <div class="dashboard-container">
         <!-- HEADER UTAMA -->
@@ -293,46 +307,76 @@
             </div>
         </div>
 
-        <!-- PENGGANTI GRAFIK: BAR MONITOR LEVEL TERMAL MURNI HTML/CSS -->
+        <!-- VISUALISASI BAR TERMAL -->
         <div class="panel">
             <div class="panel-title">🌡️ Bar Level Indikator Termal Ruangan (Real-Time)</div>
             <div class="progress-bar-wrapper">
                 <div class="progress-bar-fill" id="termalBar"></div>
             </div>
             <div class="scale-labels">
-                <span>0 °C (Beku)</span>
-                <span>25 °C (Sejuk)</span>
-                <span>32 °C (Batas Panas)</span>
-                <span>50 °C (Ekstrem)</span>
+                <span>0 °C</span>
+                <span>25 °C</span>
+                <span>32 °C</span>
+                <span>50 °C</span>
+            </div>
+        </div>
+
+        <!-- FITUR BARU: PANEL LOG RIWAYAT WAKTU & SUHU -->
+        <div class="panel">
+            <div class="panel-title">⏱️ Log Riwayat Pembacaan Waktu & Suhu</div>
+            <div class="log-container" id="logList">
+                <!-- Data baris waktu-suhu akan masuk otomatis di sini lewat Javascript -->
             </div>
         </div>
     </div>
 
-    <!-- LOGIC SCRIPT IoT TANPA LIB LUAR -->
+    <!-- LOGIC SCRIPT IoT -->
     <script>
         let alarmSudahBunyi = false;
+        const maxLogRows = 5; // Batasan jumlah baris riwayat di layar agar tidak memanjang kebawah
 
-        // Fungsi khusus pengatur panjang bar termal (Skala 0°C sampai 50°C)
+        // FITUR BARU: Fungsi pencatat log waktu "Jam sekian suhu sekian"
+        function catatRiwayatWaktu(nilaiSuhu) {
+            const containerLog = document.getElementById('logList');
+            if (!containerLog) return;
+
+            // Mengambil data waktu lokal sistem (Jam:Menit:Detik)
+            const waktuSekarang = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            // Membuat elemen baris log baru
+            const barisBaru = document.createElement('div');
+            barisBaru.className = 'log-item';
+            barisBaru.innerHTML = `
+                <span class="log-time">🕒 Pada pukul <b>${waktuSekarang}</b> WIB</span>
+                <span class="log-temp">Suhu tercatat: <b>${nilaiSuhu.toFixed(2)} °C</b></span>
+            `;
+
+            // Masukkan data terbaru di posisi paling atas list
+            containerLog.insertBefore(barisBaru, containerLog.firstChild);
+
+            // Jika baris log melebihi batas maksimal, hapus baris yang paling lama (paling bawah)
+            if (containerLog.children.length > maxLogRows) {
+                containerLog.removeChild(containerLog.lastChild);
+            }
+        }
+
         function updateTermalBar(nilaiSuhu) {
             const barFill = document.getElementById('termalBar');
             if (!barFill) return;
 
-            // Batasi nilai antara 0 s.d 50 derajat
             let suhuClamped = Math.max(0, Math.min(50, nilaiSuhu));
-            // Konversi nilai derajat menjadi persentase lebar bar (0-100%)
             let persentaseLebar = (suhuClamped / 50) * 100;
             
             barFill.style.width = persentaseLebar + '%';
 
-            // Ubah warna bar secara otomatis sesuai tingkatan suhu ruangan
             if (nilaiSuhu >= 32.0) {
-                barFill.style.backgroundColor = '#d63031'; // Merah (Terlalu Panas)
+                barFill.style.backgroundColor = '#d63031';
             } else if (nilaiSuhu >= 27.0) {
-                barFill.style.backgroundColor = '#f39c12'; // Oranye (Hangat)
+                barFill.style.backgroundColor = '#f39c12';
             } else if (nilaiSuhu >= 20.0) {
-                barFill.style.backgroundColor = '#2ecc71'; // Hijau (Sejuk Nyaman)
+                barFill.style.backgroundColor = '#2ecc71';
             } else {
-                barFill.style.backgroundColor = '#3498db'; // Biru (Dingin)
+                barFill.style.backgroundColor = '#3498db';
             }
         }
 
@@ -356,8 +400,11 @@
                     if (!isNaN(nilaiSuhu)) {
                         document.getElementById('displaySuhu').innerText = nilaiSuhu.toFixed(2) + " °C";
 
-                        // PANGGIL VISUALISASI BAR BARU: Menggeser indikator secara konstan
+                        // Update Bar Termal
                         updateTermalBar(nilaiSuhu);
+
+                        // PANGGIL FITUR LOG BARU: Menambahkan catatan baris waktu & suhu
+                        catatRiwayatWaktu(nilaiSuhu);
 
                         if (nilaiSuhu >= 32.0) {
                             document.getElementById('statusKondisi').innerText = "⚠️ PERINGATAN: RUANGAN TERLALU PANAS!";
