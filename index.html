@@ -293,6 +293,7 @@
         const maxDataPoints = 10; 
 
         // Inisialisasi Grafik saat pertama kali web dibuka
+                // Inisialisasi Grafik standar terbaru
         function initChart() {
             const ctx = document.getElementById('liveSuhuChart').getContext('2d');
             suhuChart = new Chart(ctx, {
@@ -314,16 +315,17 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    // Penulisan skala yang aman untuk Chart.js lokal
                     scales: {
                         y: {
-                            beginAtZero: false,
-                            suggestedMin: 20,
-                            suggestedMax: 40
+                            min: 15,
+                            max: 45
                         }
                     }
                 }
             });
         }
+
 
         // Menambahkan titik data baru ke grafik secara real-time
         function updateChartData(nilaiSuhu) {
