@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Assistant Room Dashboard</title>
-    <!-- Library Chart.js Resmi (Sudah Diperbaiki & Valid) -->
-   <script src="https://jsdelivr.net"></script>
     <style>
         /* --- GLOBAL & LAYOUT SYSTEM --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -214,16 +212,34 @@
             box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
         }
 
-        /* --- CONTAINER KARTU GRAFIK --- */
-        .chart-container {
+        /* --- DESAIN PROGRESS BAR BARU (MURNI CSS) --- */
+        .progress-bar-wrapper {
+            background: #f1f5f9;
             width: 100%;
-            height: 220px;
+            height: 24px;
+            border-radius: 30px;
+            overflow: hidden;
+            margin-top: 15px;
+            border: 1px solid #e2e8f0;
             position: relative;
-            margin-top: 10px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%; /* Diatur dinamis lewat Javascript */
+            background: #2ecc71;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+        }
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
         }
     </style>
 </head>
-<body onload="initChart(); ambilDataSuhu();">
+<body class="bg-light" onload="ambilDataSuhu()">
 
     <div class="dashboard-container">
         <!-- HEADER UTAMA -->
@@ -277,72 +293,47 @@
             </div>
         </div>
 
-        <!-- PANEL GRAFIK DI BAGIAN BAWAH -->
+        <!-- PENGGANTI GRAFIK: BAR MONITOR LEVEL TERMAL MURNI HTML/CSS -->
         <div class="panel">
-            <div class="panel-title">📈 Grafik Riwayat Tren Suhu Real-Time</div>
-            <div class="chart-container">
-                <canvas id="liveSuhuChart"></canvas>
+            <div class="panel-title">🌡️ Bar Level Indikator Termal Ruangan (Real-Time)</div>
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-fill" id="termalBar"></div>
+            </div>
+            <div class="scale-labels">
+                <span>0 °C (Beku)</span>
+                <span>25 °C (Sejuk)</span>
+                <span>32 °C (Batas Panas)</span>
+                <span>50 °C (Ekstrem)</span>
             </div>
         </div>
     </div>
 
-    <!-- LOGIC SCRIPT IoT & LIVE UPDATE CHART -->
+    <!-- LOGIC SCRIPT IoT TANPA LIB LUAR -->
     <script>
         let alarmSudahBunyi = false;
-        let suhuChart;
-        const maxDataPoints = 10; 
 
-        // Inisialisasi Grafik saat pertama kali web dibuka
-                // Inisialisasi Grafik standar terbaru
-        function initChart() {
-            const ctx = document.getElementById('liveSuhuChart').getContext('2d');
-            suhuChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [], 
-                    datasets: [{
-                        label: 'Suhu (°C)',
-                        data: [], 
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#3b82f6',
-                        pointRadius: 4,
-                        tension: 0.3, 
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    // Penulisan skala yang aman untuk Chart.js lokal
-                    scales: {
-                        y: {
-                            min: 15,
-                            max: 45
-                        }
-                    }
-                }
-            });
-        }
+        // Fungsi khusus pengatur panjang bar termal (Skala 0°C sampai 50°C)
+        function updateTermalBar(nilaiSuhu) {
+            const barFill = document.getElementById('termalBar');
+            if (!barFill) return;
 
-
-        // Menambahkan titik data baru ke grafik secara real-time
-        function updateChartData(nilaiSuhu) {
-            if (!suhuChart) return;
-
-            const waktuSekarang = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            // Batasi nilai antara 0 s.d 50 derajat
+            let suhuClamped = Math.max(0, Math.min(50, nilaiSuhu));
+            // Konversi nilai derajat menjadi persentase lebar bar (0-100%)
+            let persentaseLebar = (suhuClamped / 50) * 100;
             
-            suhuChart.data.labels.push(waktuSekarang);
-            suhuChart.data.datasets.data.push(nilaiSuhu);
+            barFill.style.width = persentaseLebar + '%';
 
-            // Geser grafik jika data sudah melewati batas maksimal
-            if (suhuChart.data.labels.length > maxDataPoints) {
-                suhuChart.data.labels.shift();
-                suhuChart.data.datasets.data.shift();
+            // Ubah warna bar secara otomatis sesuai tingkatan suhu ruangan
+            if (nilaiSuhu >= 32.0) {
+                barFill.style.backgroundColor = '#d63031'; // Merah (Terlalu Panas)
+            } else if (nilaiSuhu >= 27.0) {
+                barFill.style.backgroundColor = '#f39c12'; // Oranye (Hangat)
+            } else if (nilaiSuhu >= 20.0) {
+                barFill.style.backgroundColor = '#2ecc71'; // Hijau (Sejuk Nyaman)
+            } else {
+                barFill.style.backgroundColor = '#3498db'; // Biru (Dingin)
             }
-
-            suhuChart.update();
         }
 
         function asistenBerbicara(teks) {
@@ -365,8 +356,8 @@
                     if (!isNaN(nilaiSuhu)) {
                         document.getElementById('displaySuhu').innerText = nilaiSuhu.toFixed(2) + " °C";
 
-                        // PANGGIL UPDATE GRAFIK
-                        updateChartData(nilaiSuhu);
+                        // PANGGIL VISUALISASI BAR BARU: Menggeser indikator secara konstan
+                        updateTermalBar(nilaiSuhu);
 
                         if (nilaiSuhu >= 32.0) {
                             document.getElementById('statusKondisi').innerText = "⚠️ PERINGATAN: RUANGAN TERLALU PANAS!";
