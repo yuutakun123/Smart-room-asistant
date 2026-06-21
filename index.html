@@ -4,16 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Assistant Room Dashboard</title>
+    <!-- Bootstrap CSS & Font Awesome Icons -->
+    <link href="https://cloudflare.com" rel="stylesheet">
+    <link href="https://cloudflare.com" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background: #eef2f3; padding-top: 50px; margin: 0; }
-        .card { background: white; padding: 40px; border-radius: 20px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 85%; }
-        h1 { color: #2c3e50; font-size: 28px; margin-bottom: 5px; }
-        .sub { color: #7f8c8d; font-size: 14px; margin-bottom: 25px; }
-        .suhu-box { background: #fdf0ed; border-radius: 15px; padding: 20px; border: 2px solid #ff7675; }
-        .suhu { font-size: 64px; font-weight: bold; color: #d63031; }
-        .status { margin-top: 20px; font-size: 14px; color: #7f8c8d; font-weight: bold; }
-        .btn-suara { margin-top: 25px; background: #0984e3; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8f9fc; }
+        .sidebar { background: #4e73df; min-height: 100vh; color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8); font-weight: 500; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.1); border-radius: 5px; }
+        .navbar { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .card-stat { border-left: 4px solid #4e73df; }
+        .card-suhu-panas { border-left: 4px solid #e74a3b !important; }
+        .card-suhu-normal { border-left: 4px solid #1cc88a !important; }
+        .text-suhu { font-size: 2.5rem; font-weight: bold; color: #5a5c69; }
     </style>
+</head>
+<body class="bg-light" onload="ambilDataSuhu()">
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- SIDEBAR (Menyesuaikan menu gambar RuangAdmin) -->
+            <nav class="col-md-2 d-none d-md-block sidebar py-3">
+                <div class="sidebar-brand d-flex align-items-center mb-4 px-3">
+                    <i class="fas fa-robot fa-2x mr-2"></i>
+                    <span class="h5 mb-0 font-weight-bold">RuangSmart</span>
+                </div>
+                <hr class="sidebar-divider border-light opacity-25">
+                <ul class="nav flex-column">
+                    <li class="nav-item mb-2">
+                        <a class="nav-link active" href="#"><i class="fas fa-fw fa-tachometer-alt mr-2"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="#"><i class="fas fa-fw fa-thermometer-half mr-2"></i> Riwayat Suhu</a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="#"><i class="fas fa-fw fa-cogs mr-2"></i> Pengaturan IoT</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="col-md-10 ml-sm-auto px-4">
+                <!-- TOP NAVBAR -->
+                <nav class="navbar navbar-expand navbar-light mb-4 justify-content-between py-3 px-0">
+                    <h1 class="h4 mb-0 text-gray-800 font-weight-bold">Dashboard Sistem IoT</h1>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-primary btn-sm font-weight-bold mr-3" id="btnAktif" onclick="aktifkanAsisten()">
+                            <i class="fas fa-volume-up mr-1"></i> Aktifkan Suara Asisten
+                        </button>
+                        <div class="dropdown">
+                            <span class="mr-2 d-none d-lg-inline text-gray-600 small font-weight-bold">Operator IoT</span>
+                            <img src="https://flaticon.com" width="32" class="img-profile rounded-circle" alt="User">
+                        </div>
+                    </div>
+                </nav>
+
+                <!-- SUBTITLE -->
+                <p class="text-muted mt-n3 mb-4">Sistem Pengendalian Nyata Berbasis Web IoT (Vercel)</p>
+
+                <!-- STATS CARDS ROW -->
+                <div class="row">
+                    <!-- KARTU UTAMA: MONITOR SUHU -->
+                    <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="card shadow h-100 py-2 card-stat" id="statusBorder">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Suhu Ruangan Saat Ini</div>
+                                        <div class="text-suhu" id="displaySuhu">-- °C</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-thermometer-half fa-3x text-gray-300" id="iconSuhu"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KARTU STATUS KONDISI -->
+                    <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="card shadow h-100 py-2 border-left-info">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Status Sistem</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800 mt-2" id="statusKondisi">Menghubungkan ke server...</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-info-circle fa-3x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KARTU STATUS SUARA ASISTEN -->
+                    <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="card shadow h-100 py-2 border-left-warning">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Status Voice Assistant</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800 mt-2" id="statusSuara">Belum Aktif (Suara Mati)</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-microphone-slash fa-3x text-gray-300" id="iconMik"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS & LOG ROW REPLICA -->
+                <div class="row">
+                    <!-- Kolom kosong/replika grafik untuk visual estetik mirip RuangAdmin -->
+                    <div class="col-lg-8 mb-4">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">Grafik Tren Suhu (Simulasi)</h6>
+                            </div>
+                            <div class="card-body text-center py-5 text-muted">
+                                <i class="fas fa-chart-line fa-4x mb-3 text-gray-200"></i>
+                                <p>Modul penampil grafik riwayat suhu siap diintegrasikan di sini.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Kolom Panel Kontrol Manual IoT -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Kontrol Cepat Perangkat</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span>Sakelar Kipas / AC</span>
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input" id="switchKipas">
+                                        <label class="custom-control-label" for="switchKipas"></label>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Lampu Ruangan</span>
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input" id="switchLampu">
+                                        <label class="custom-control-label" for="switchLampu"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- LOGIC JAVASCRIPT IoT -->
     <script>
         let alarmSudahBunyi = false;
 
@@ -26,47 +173,4 @@
 
         function aktifkanAsisten() {
             asistenBerbicara("Asisten pintar ruangan diaktifkan. Memulai pembacaan data sensor.");
-            document.getElementById('btnAktif').style.display = 'none';
-        }
-
-        function ambilDataSuhu() {
-            // Membaca data suhu secara langsung dari API backend Vercel tanpa proxy luar
-            fetch('/api/suhu')
-                .then(response => response.json())
-                .then(data => {
-                    let nilaiSuhu = parseFloat(data.suhu);
-                    if (!isNaN(nilaiSuhu)) {
-                        document.getElementById('displaySuhu').innerText = nilaiSuhu.toFixed(2) + " °C";
-
-                        if (nilaiSuhu >= 32.0) {
-                            document.getElementById('statusKondisi').innerText = "⚠️ PERINGATAN: RUANGAN TERLALU PANAS!";
-                            document.getElementById('statusKondisi').style.color = "#d63031";
-                            
-                            if (!alarmSudahBunyi) {
-                                asistenBerbicara("Peringatan, suhu ruangan melebihi batas normal. Saat ini suhu mencapai " + nilaiSuhu.toFixed(0) + " derajat Celcius.");
-                                alarmSudahBunyi = true;
-                            }
-                        } else {
-                            document.getElementById('statusKondisi').innerText = "✓ Suhu Ruangan Normal Sejuk.";
-                            document.getElementById('statusKondisi').style.color = "#2ecc71";
-                            alarmSudahBunyi = false;
-                        }
-                    }
-                })
-                .catch(err => console.log("Menghubungkan kembali..."));
-        }
-        setInterval(ambilDataSuhu, 3000);
-    </script>
-</head>
-<body onload="ambilDataSuhu()">
-    <div class="card">
-        <h1>Smart Assistant Room</h1>
-        <div class="sub">Sistem Pengendalian Nyata Berbasis Web IoT (Vercel)</div>
-        <div class="suhu-box">
-            <div class="suhu" id="displaySuhu">-- °C</div>
-            <div class="status" id="statusKondisi">Menghubungkan ke server...</div>
-        </div>
-        <button class="btn-suara" id="btnAktif" onclick="aktifkanAsisten()">Klik untuk Aktifkan Suara Asisten</button>
-    </div>
-</body>
-</html>
+            document.getElementById('btnAktif').classList.remove('btn-primary');
