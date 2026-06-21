@@ -4,163 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Assistant Room Dashboard</title>
-    <!-- Bootstrap CSS & Font Awesome Icons -->
-    <link href="https://cloudflare.com" rel="stylesheet">
-    <link href="https://cloudflare.com" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8f9fc; }
-        .sidebar { background: #4e73df; min-height: 100vh; color: white; }
-        .sidebar .nav-link { color: rgba(255,255,255,0.8); font-weight: 500; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.1); border-radius: 5px; }
-        .navbar { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .card-stat { border-left: 4px solid #4e73df; }
-        .card-suhu-panas { border-left: 4px solid #e74a3b !important; }
-        .card-suhu-normal { border-left: 4px solid #1cc88a !important; }
-        .text-suhu { font-size: 2.5rem; font-weight: bold; color: #5a5c69; }
+        /* --- RESET & BASE STYLES --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; color: #333; display: flex; min-height: 100vh; }
+
+        /* --- LAYOUT LAYOUT SIDEBAR & MAIN --- */
+        .sidebar { width: 240px; background: #4e73df; color: white; padding: 20px 15px; display: flex; flex-direction: column; shrink: 0; }
+        .main-content { flex-grow: 1; padding: 30px; background: #f8f9fc; }
+
+        /* --- SIDEBAR COMPONENTS --- */
+        .sidebar-brand { font-size: 20px; font-weight: bold; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+        .sidebar-divider { height: 1px; background: rgba(255,255,255,0.2); margin-bottom: 20px; }
+        .nav-menu { list-style: none; }
+        .nav-item { margin-bottom: 10px; }
+        .nav-link { color: rgba(255,255,255,0.8); text-decoration: none; padding: 12px 15px; display: block; border-radius: 8px; font-weight: 500; font-size: 15px; }
+        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,0.15); }
+
+        /* --- NAVBAR COMPONENTS --- */
+        .navbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #e3e6f0; }
+        .navbar h1 { font-size: 24px; color: #2c3e50; font-weight: 700; }
+        .nav-user { display: flex; align-items: center; gap: 12px; }
+        .user-name { font-size: 14px; font-weight: 600; color: #5a5c69; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #ddd; }
+
+        /* --- SUBTITLE --- */
+        .subtitle { color: #858796; font-size: 14px; margin-top: -20px; margin-bottom: 30px; }
+
+        /* --- GRID SYSTEM --- */
+        .card-row { display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; }
+        .card-col { flex: 1; min-width: 250px; }
+        .col-8 { flex: 2; min-width: 500px; }
+        .col-4 { flex: 1; min-width: 250px; }
+
+        /* --- DASHBOARD CARDS --- */
+        .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; position: relative; border: 1px solid #e3e6f0; }
+        .card-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        
+        /* Tema Warna Kartu Atas */
+        .text-primary { color: #4e73df; }
+        .text-info { color: #36b9cc; }
+        .text-warning { color: #f6c23e; }
+        
+        /* Status Border Dinamis Sensor */
+        .border-suhu-default { border-left: 5px solid #4e73df; }
+        .border-suhu-normal { border-left: 5px solid #1cc88a; }
+        .border-suhu-panas { border-left: 5px solid #e74a3b; }
+        .border-info { border-left: 5px solid #36b9cc; }
+        .border-warning { border-left: 5px solid #f6c23e; }
+
+        .suhu-value { font-size: 36px; font-weight: 700; color: #5a5c69; margin-top: 5px; }
+        .status-text { font-size: 16px; font-weight: 700; color: #4e73df; margin-top: 10px; }
+        .panel-title { font-size: 16px; font-weight: 700; color: #4e73df; margin-bottom: 20px; border-bottom: 1px solid #f1f3f9; padding-bottom: 10px; }
+
+        /* --- BUTTONS --- */
+        .btn-suara { background: #4e73df; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s; }
+        .btn-suara:hover { background: #2e59d9; }
+        .btn-suara.active { background: #1cc88a; }
+
+        /* --- SWITCH TOGGLE (KONTROL IOT) --- */
+        .control-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 0; }
+        .control-item span { font-size: 15px; font-weight: 500; color: #5a5c69; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #4e73df; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* --- PLACEHOLDER CHART --- */
+        .chart-placeholder { text-align: center; padding: 40px 20px; color: #858796; font-size: 14px; }
+        .chart-icon { font-size: 48px; color: #dddfeb; margin-bottom: 15px; display: block; }
     </style>
 </head>
-<body class="bg-light" onload="ambilDataSuhu()">
+<body onload="ambilDataSuhu()">
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- SIDEBAR (Menyesuaikan menu gambar RuangAdmin) -->
-            <nav class="col-md-2 d-none d-md-block sidebar py-3">
-                <div class="sidebar-brand d-flex align-items-center mb-4 px-3">
-                    <i class="fas fa-robot fa-2x mr-2"></i>
-                    <span class="h5 mb-0 font-weight-bold">RuangSmart</span>
+    <!-- SIDEBAR KIRI -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <span>🤖 RuangSmart</span>
+        </div>
+        <div class="sidebar-divider"></div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="#" class="nav-link active">📊 Dashboard</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">🌡️ Riwayat Suhu</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">⚙️ Pengaturan IoT</a></li>
+        </ul>
+    </div>
+
+    <!-- KONTEN UTAMA KANAN -->
+    <div class="main-content">
+        <!-- TOP NAVBAR -->
+        <div class="navbar">
+            <h1>Dashboard Sistem IoT</h1>
+            <div class="nav-user">
+                <button class="btn-suara" id="btnAktif" onclick="aktifkanAsisten()">🔊 Aktifkan Suara Asisten</button>
+                <div class="user-name">Operator IoT</div>
+                <div class="user-avatar"></div>
+            </div>
+        </div>
+
+        <div class="subtitle">Sistem Pengendalian Nyata Berbasis Web IoT (Vercel)</div>
+
+        <!-- TIGA KARTU INDIKATOR ATAS -->
+        <div class="card-row">
+            <!-- Kartu Monitor Suhu -->
+            <div class="card-col">
+                <div class="card border-suhu-default" id="statusBorder">
+                    <div class="card-header text-primary">Suhu Ruangan Saat Ini</div>
+                    <div class="suhu-value" id="displaySuhu">-- °C</div>
                 </div>
-                <hr class="sidebar-divider border-light opacity-25">
-                <ul class="nav flex-column">
-                    <li class="nav-item mb-2">
-                        <a class="nav-link active" href="#"><i class="fas fa-fw fa-tachometer-alt mr-2"></i> Dashboard</a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link" href="#"><i class="fas fa-fw fa-thermometer-half mr-2"></i> Riwayat Suhu</a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link" href="#"><i class="fas fa-fw fa-cogs mr-2"></i> Pengaturan IoT</a>
-                    </li>
-                </ul>
-            </nav>
+            </div>
 
-            <!-- MAIN CONTENT AREA -->
-            <main class="col-md-10 ml-sm-auto px-4">
-                <!-- TOP NAVBAR -->
-                <nav class="navbar navbar-expand navbar-light mb-4 justify-content-between py-3 px-0">
-                    <h1 class="h4 mb-0 text-gray-800 font-weight-bold">Dashboard Sistem IoT</h1>
-                    <div class="d-flex align-items-center">
-                        <button class="btn btn-primary btn-sm font-weight-bold mr-3" id="btnAktif" onclick="aktifkanAsisten()">
-                            <i class="fas fa-volume-up mr-1"></i> Aktifkan Suara Asisten
-                        </button>
-                        <div class="dropdown">
-                            <span class="mr-2 d-none d-lg-inline text-gray-600 small font-weight-bold">Operator IoT</span>
-                            <img src="https://flaticon.com" width="32" class="img-profile rounded-circle" alt="User">
-                        </div>
-                    </div>
-                </nav>
+            <!-- Kartu Kondisi Sistem -->
+            <div class="card-col">
+                <div class="card border-info">
+                    <div class="card-header text-info">Status Sistem</div>
+                    <div class="status-text" id="statusKondisi" style="color: #36b9cc;">Menghubungkan ke server...</div>
+                </div>
+            </div>
 
-                <!-- SUBTITLE -->
-                <p class="text-muted mt-n3 mb-4">Sistem Pengendalian Nyata Berbasis Web IoT (Vercel)</p>
+            <!-- Kartu Status Asisten -->
+            <div class="card-col">
+                <div class="card border-warning">
+                    <div class="card-header text-warning">Status Voice Assistant</div>
+                    <div class="status-text" id="statusSuara" style="color: #f6c23e;">Belum Aktif (Suara Mati)</div>
+                </div>
+            </div>
+        </div>
 
-                <!-- STATS CARDS ROW -->
-                <div class="row">
-                    <!-- KARTU UTAMA: MONITOR SUHU -->
-                    <div class="col-xl-4 col-md-6 mb-4">
-                        <div class="card shadow h-100 py-2 card-stat" id="statusBorder">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Suhu Ruangan Saat Ini</div>
-                                        <div class="text-suhu" id="displaySuhu">-- °C</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-thermometer-half fa-3x text-gray-300" id="iconSuhu"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- KARTU STATUS KONDISI -->
-                    <div class="col-xl-4 col-md-6 mb-4">
-                        <div class="card shadow h-100 py-2 border-left-info">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Status Sistem</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800 mt-2" id="statusKondisi">Menghubungkan ke server...</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-info-circle fa-3x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- KARTU STATUS SUARA ASISTEN -->
-                    <div class="col-xl-4 col-md-6 mb-4">
-                        <div class="card shadow h-100 py-2 border-left-warning">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Status Voice Assistant</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800 mt-2" id="statusSuara">Belum Aktif (Suara Mati)</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-microphone-slash fa-3x text-gray-300" id="iconMik"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <!-- REPLIKA GRAFIK DAN KONTROL SAKELAR -->
+        <div class="card-row">
+            <!-- Kolom Tempat Grafik -->
+            <div class="card-col col-8">
+                <div class="card">
+                    <div class="panel-title">Grafik Tren Suhu</div>
+                    <div class="chart-placeholder">
+                        <span class="chart-icon">📈</span>
+                        Panel penampil grafik riwayat sensor siap diintegrasikan di sini.
                     </div>
                 </div>
+            </div>
 
-                <!-- CHARTS & LOG ROW REPLICA -->
-                <div class="row">
-                    <!-- Kolom kosong/replika grafik untuk visual estetik mirip RuangAdmin -->
-                    <div class="col-lg-8 mb-4">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">Grafik Tren Suhu (Simulasi)</h6>
-                            </div>
-                            <div class="card-body text-center py-5 text-muted">
-                                <i class="fas fa-chart-line fa-4x mb-3 text-gray-200"></i>
-                                <p>Modul penampil grafik riwayat suhu siap diintegrasikan di sini.</p>
-                            </div>
-                        </div>
+            <!-- Kolom Kontrol Tombol IoT -->
+            <div class="card-col col-4">
+                <div class="card">
+                    <div class="panel-title">Kontrol Cepat Perangkat</div>
+                    
+                    <div class="control-item">
+                        <span>Sakelar Kipas / AC</span>
+                        <label class="switch">
+                            <input type="checkbox" id="switchKipas">
+                            <span class="slider"></span>
+                        </label>
                     </div>
-                    <!-- Kolom Panel Kontrol Manual IoT -->
-                    <div class="col-lg-4 mb-4">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">Kontrol Cepat Perangkat</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span>Sakelar Kipas / AC</span>
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" class="custom-control-input" id="switchKipas">
-                                        <label class="custom-control-label" for="switchKipas"></label>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span>Lampu Ruangan</span>
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" class="custom-control-input" id="switchLampu">
-                                        <label class="custom-control-label" for="switchLampu"></label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
+                    <div class="control-item">
+                        <span>Lampu Ruangan</span>
+                        <label class="switch">
+                            <input type="checkbox" id="switchLampu">
+                            <span class="slider"></span>
+                        </label>
                     </div>
                 </div>
-
-            </main>
+            </div>
         </div>
     </div>
 
-    <!-- LOGIC JAVASCRIPT IoT -->
+    <!-- LOGIC SCRIPT IoT -->
     <script>
         let alarmSudahBunyi = false;
 
@@ -173,4 +184,22 @@
 
         function aktifkanAsisten() {
             asistenBerbicara("Asisten pintar ruangan diaktifkan. Memulai pembacaan data sensor.");
-            document.getElementById('btnAktif').classList.remove('btn-primary');
+            let btn = document.getElementById('btnAktif');
+            btn.classList.add('active');
+            btn.innerHTML = "✅ Suara Asisten Aktif";
+            
+            document.getElementById('statusSuara').innerText = "Aktif & Mendengarkan";
+            document.getElementById('statusSuara').style.color = "#1cc88a";
+        }
+
+        function ambilDataSuhu() {
+            fetch('/api/suhu')
+                .then(response => response.json())
+                .then(data => {
+                    let nilaiSuhu = parseFloat(data.suhu);
+                    if (!isNaN(nilaiSuhu)) {
+                        document.getElementById('displaySuhu').innerText = nilaiSuhu.toFixed(2) + " °C";
+
+                        let borderBox = document.getElementById('statusBorder');
+
+                        if (nilaiSuhu >= 32.0) {
